@@ -75,9 +75,7 @@ public class MoviesFragment extends Fragment {
          */
     private int getFilterValue(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE) ;
-
-        int defaultFilterValue = R.string.saved_filter_default_key ;
-        return sharedPreferences.getInt(getString(R.string.saved_filter_key), R.string.saved_filter_default_key);
+        return sharedPreferences.getInt(getString(R.string.saved_filter_key), R.string.request_popular);
     }
 
     /*
@@ -116,7 +114,9 @@ public class MoviesFragment extends Fragment {
     @Override
     public void onResume() {
         Context context = getContext() ;
-        gridView.setAdapter(null);
+
+        // gridView.setAdapter(null);
+        theMovies = new Movies() ;
         /*
             Set the correct menu item icon
          */
@@ -129,6 +129,7 @@ public class MoviesFragment extends Fragment {
          */
         int filterValue = getFilterValue(context);
         String  fileString = context.getString(filterValue) ;
+        int test = (int)R.string.request_popular ;
         /*
             Check if the filer option is for user favorites of requires
             online access

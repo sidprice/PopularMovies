@@ -138,6 +138,9 @@ public class Movies {
         Get tne number of movies
      */
     public int getCount() {
+        if ( mMovies == null ) {
+            return 0 ;
+        }
         return mMovies.size();
     }
     /*
