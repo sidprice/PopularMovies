@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-public class FetchMovieExtraDataTask extends AsyncTask<Integer, Void, String[]> {
+public class FetchMovieExtraDataTask extends AsyncTask<String, Void, String[]> {
     /*
         Create the interface that allows the background thread to
         call the MainActivity thread with the result of the
@@ -48,7 +48,7 @@ public class FetchMovieExtraDataTask extends AsyncTask<Integer, Void, String[]> 
         the trailer data.
      */
     @Override
-    protected String[] doInBackground(Integer... integers) {
+    protected String[] doInBackground(String... integers) {
         try {
             String[] jsonStringsReturned = new String[2];
             byte[] resultBytes ;

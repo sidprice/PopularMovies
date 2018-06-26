@@ -1,7 +1,6 @@
 package com.sidprice.android.popularmovies.fragments;
 
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.Bundle;
@@ -15,21 +14,27 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sidprice.android.popularmovies.activities.CustomLinearLayout;
 import com.sidprice.android.popularmovies.adapters.ReviewsAdapter;
-import com.sidprice.android.popularmovies.database.MoviesDatabaseHelper;
+import com.sidprice.android.popularmovies.database.MoviesDatabase;
 import com.sidprice.android.popularmovies.tasks.FetchMovieExtraDataTask;
 import com.sidprice.android.popularmovies.model.Movie;
 import com.sidprice.android.popularmovies.R;
 import com.sidprice.android.popularmovies.adapters.TrailerListAdapter;
 import com.squareup.picasso.Picasso;
 
+import java.nio.ByteBuffer;
+
 public class DetailsFragment extends Fragment {
+    private static final String TAG = "DetailsFragment";
     private ImageView mImageView ;
     private TextView mtv_title, mtv_release_date, mtv_user_rating, mtv_synopsis ;
+    private ScrollView  mscroll_view ;
+    private int[] mscrollview_position = new int[2];
     private Button  mbtn_favorite ;
     private ImageView   mImageStar ;
     private String  mtitle, mrelease_date, muser_rating, msynopsis, mposter_url ;
@@ -45,7 +50,9 @@ public class DetailsFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         final View    view = inflater.inflate(R.layout.fragment_details, container, false) ;
-             /*
+
+        mscroll_view = view.findViewById(R.id.details_scroll_view) ;
+        /*
             Get the UI elements
          */
         mtv_title = view.findViewById(R.id.tv_title) ;
@@ -108,18 +115,23 @@ public class DetailsFragment extends Fragment {
                 //
                 if ( !mmovie.getPosterUrl().equals("")) {
                     Picasso.get().load(mposter_url).into(mImageView) ;
-                } else {
-                    MoviesDatabaseHelper    dbHelper = new MoviesDatabaseHelper(getContext()) ;
-                    SQLiteDatabase db =  dbHelper.getReadableDatabase() ;
-                    mImageView.setImageBitmap(dbHelper.GetPosterBitmap(db, mmovie));
+                } else {// TODO get bitmap from database
+                    mImageView.setImageBitmap(mmovie.getMoviePosterBitmap());
                 }
                 /*
-                    Set favorite image and button text according to move favorite state
+                    Set favorite image and button text according to movie favorite state
                  */
-                processMovieFavorite( mmovie.getFavorite());
+                processMovieFavorite( mmovie.getFavorite(getContext()));
                 mtv_release_date.setText(mrelease_date);
                 mtv_user_rating.setText(muser_rating);
                 mtv_synopsis.setText(msynopsis);
+                mscroll_view.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mscroll_view.scrollTo(mscrollview_position[0], mscrollview_position[1]);
+                    }
+                });
+
                 /*
                     Set up a click handler for the favorite button
                  */
@@ -127,14 +139,12 @@ public class DetailsFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         Bitmap  posterBitmap ;
-                        boolean isFavorite = !(mmovie.getFavorite()) ;
-                        mmovie.setFavorite(isFavorite) ;
+                        boolean isFavorite = !(mmovie.getFavorite(getContext())) ;
                         processMovieFavorite(isFavorite);
                         /*
                             Update the local database of favorite movies
                          */
-                        MoviesDatabaseHelper dbHelper = new MoviesDatabaseHelper(getContext()) ;
-                        SQLiteDatabase db =  dbHelper.getWritableDatabase() ;
+                        MoviesDatabase moviesDb = MoviesDatabase.getInstance(getContext()) ;
                         /*
                             If movie is favorite, add to database
                          */
@@ -143,20 +153,26 @@ public class DetailsFragment extends Fragment {
                                 Get the poster bitmap to be added to the database
                              */
                             posterBitmap = ((BitmapDrawable)mImageView.getDrawable()).getBitmap() ;
-                            if (dbHelper.Insert(db, mmovie,  posterBitmap) != -1 ) {
-                                Toast.makeText(getContext(), "Added favorite movie", Toast.LENGTH_SHORT).show() ;
-                            } else {
-                                Toast.makeText(getContext(), "Failed to add movie to database", Toast.LENGTH_SHORT).show();
-                            }
+                            /*
+                                Convert the input Bitmap to a byte array for addition to Database
+                            */
+                            ByteBuffer byteBuffer = ByteBuffer.allocate(posterBitmap.getByteCount()) ;
+                            posterBitmap.copyPixelsToBuffer(byteBuffer);
+                            byteBuffer.rewind() ;
+                            byte[]  data = new byte[byteBuffer.remaining()] ;
+                            byteBuffer.get(data) ;
+
+                            mmovie.setMoviePoster(data);
+                            mmovie.setPosterHeight(posterBitmap.getHeight() ) ;
+                            mmovie.setPosterWidth(posterBitmap.getWidth()) ;
+                            moviesDb.moviesDao().insertMovie(mmovie);
+                            Toast.makeText(getContext(), "Added favorite movie", Toast.LENGTH_SHORT).show() ;
                         } else {
                             /*
                                 Remove from local database
                              */
-                            if (dbHelper.Delete(db, mmovie) != 0 ) {
-                                Toast.makeText(getContext(), "Deleted favorite movie", Toast.LENGTH_SHORT).show() ;
-                            } else {
-                                Toast.makeText(getContext(), "Failed to delete movie to database", Toast.LENGTH_SHORT).show();
-                            }
+                            moviesDb.moviesDao().deleteMovie(mmovie);
+                            Toast.makeText(getContext(), "Deleted favorite movie", Toast.LENGTH_SHORT).show() ;
                         }
 
                     }
@@ -168,6 +184,22 @@ public class DetailsFragment extends Fragment {
          */
         fetchMovieExtraDataTask.execute(mmovie.getID()) ;
         return view ;
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        mscrollview_position[0] = mscroll_view.getScrollX() ;
+        mscrollview_position[1] = mscroll_view.getScrollY() ;
+        outState.putIntArray( getString(R.string.state_details_scroll_position), mscrollview_position);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            mscrollview_position = savedInstanceState.getIntArray( getString(R.string.state_details_scroll_position)) ;
+        }
+        super.onViewStateRestored(savedInstanceState);
     }
 
     private void processMovieFavorite(Boolean isFavorite) {

@@ -112,6 +112,22 @@ public class MoviesFragment extends Fragment {
     }
 
     @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        int gridScrollPosition = gridView.getFirstVisiblePosition() ;
+        outState.putInt(getString(R.string.state_main_scroll_position), gridScrollPosition);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        if ( savedInstanceState != null ) {
+            int gridScrollPosition = savedInstanceState.getInt(getString(R.string.state_main_scroll_position)) ;
+            gridView.setSelection(gridScrollPosition);
+        }
+        super.onViewStateRestored(savedInstanceState);
+    }
+
+    @Override
     public void onResume() {
         Context context = getContext() ;
 
@@ -131,7 +147,7 @@ public class MoviesFragment extends Fragment {
         String  fileString = context.getString(filterValue) ;
         int test = (int)R.string.request_popular ;
         /*
-            Check if the filer option is for user favorites of requires
+            Check if the filter option is for user favorites of requires
             online access
          */
         switch(filterValue) {
@@ -180,5 +196,8 @@ public class MoviesFragment extends Fragment {
         GridView theGridView = getActivity().findViewById(R.id.gv_movies);
         final MoviesAdapter moviesAdapter = new MoviesAdapter(getContext(), theMovies);
         theGridView.setAdapter(moviesAdapter);
+        if ( theMovies.getCount() == 0 ) {
+            Toast.makeText(getContext(), R.string.error_no_favorites, Toast.LENGTH_LONG).show(); ;
+        }
     }
 }

@@ -17,12 +17,17 @@ android {
         }
     }
     buildTypes.each {
-        it.buildConfigField 'String', 'THE_MOVIE_DATABASE_API_KEY', "\"API KEY GOES HERE\""
+        it.buildConfigField 'String', 'THE_MOVIE_DATABASE_API_KEY', "\"Movie API Key goes here\""
     }
 
 }
 
 dependencies {
+    def room_version = "1.1.0" // or, for latest rc, use "1.1.1-rc1"
+
+    implementation "android.arch.persistence.room:runtime:$room_version"
+    annotationProcessor "android.arch.persistence.room:compiler:$room_version"
+
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:27.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.1.0'

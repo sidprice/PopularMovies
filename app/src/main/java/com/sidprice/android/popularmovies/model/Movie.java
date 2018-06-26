@@ -1,53 +1,75 @@
 package com.sidprice.android.popularmovies.model;
 
+import android.arch.persistence.room.ColumnInfo;
+import android.arch.persistence.room.Entity;
+import android.arch.persistence.room.Ignore;
+import android.arch.persistence.room.PrimaryKey;
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.NonNull;
+import android.util.DisplayMetrics;
+import android.util.Log;
+
+import com.sidprice.android.popularmovies.database.MoviesDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 /*
     Class to hold the data describing a movie
+
  */
+@Entity(tableName = "movies")
 public class Movie implements Parcelable {
-    private final   Integer ID ;
-    private Boolean favorite ;
+    private static final String TAG = "Movie";
+    @PrimaryKey
+    @NonNull
+    private final   String ID ;        // Movie ID from online Db
+//    private Boolean favorite ;
     private final   String  originalTitle ;
     private final   String  posterUrl;
     private final   String  synopsis ;
     private final   String  userRating ;
     private final   String  releaseDate ;
+    @ColumnInfo( typeAffinity = ColumnInfo.BLOB)
+    private byte[]  moviePoster ;
+    private int     posterHeight = 0 ;
+    private int     posterWidth = 0 ;
+    @Ignore
     private ArrayList<ReviewData>   reviews = new ArrayList<ReviewData>() ;
+    @Ignore
     private ArrayList<String>       trailers = new ArrayList<String>() ;
 
-    public Movie(Integer ID, String originalTitle, String posterUrl, String synopsis, String userRating, String releaseDate, Boolean favorite) {
+    public Movie(String ID, String originalTitle, String posterUrl, String synopsis, String userRating, String releaseDate, byte[] moviePoster) {
         this.ID = ID ;
         this.originalTitle = originalTitle ;
         this.posterUrl = posterUrl ;
         this.synopsis = synopsis ;
         this.userRating = userRating ;
         this.releaseDate = releaseDate ;
-        this.favorite = favorite;
+        //this.favorite = favorite;
+        this.moviePoster = moviePoster;
     }
 
+    @Ignore
     protected Movie(Parcel in) {
-        if (in.readByte() == 0) {
-            ID = null;
-        } else {
-            ID = in.readInt();
-        }
+        ID = in.readString() ;
         originalTitle = in.readString();
         posterUrl = in.readString();
         synopsis = in.readString();
         userRating = in.readString();
         releaseDate = in.readString();
-        favorite = false;
-        if ( in.readInt() != 0 ) {
-            favorite = true  ;
-        }
+//        favorite = false;
+//        if ( in.readInt() != 0 ) {
+//            favorite = true  ;
+//        }
+        moviePoster = null ;
     }
     /*
         This method recieves the json strings read from the online database
@@ -117,28 +139,24 @@ public class Movie implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        if (ID == null) {
-            dest.writeByte((byte) 0);
-        } else {
-            dest.writeByte((byte) 1);
-            dest.writeInt(ID);
-        }
+//        if (ID == null) {
+//            dest.writeByte((byte) 0);
+//        } else {
+//            dest.writeByte((byte) 1);
+//            dest.writeString(ID);
+//        }
+        dest.writeString(ID);
         dest.writeString(originalTitle);
         dest.writeString(posterUrl);
         dest.writeString(synopsis);
         dest.writeString(userRating);
         dest.writeString(releaseDate);
-        int favoriteAsInt = 0 ;
-        if (favorite) {
-            favoriteAsInt = 1 ;
-        }
-        dest.writeInt(favoriteAsInt);
     }
 
     //
     public String getPosterUrl() { return posterUrl ;} ;
     //
-    public int getID() { return ID ;}
+    public String getID() { return ID ;}
     //
     public String getSynopsis() { return synopsis ; }
     //
@@ -158,8 +176,37 @@ public class Movie implements Parcelable {
         return reviews.get(position) ;
     }
     //
-    public void setFavorite(Boolean favorite) { this.favorite = favorite; }
-    //
-    public Boolean getFavorite() { return favorite ; }
+    public Boolean getFavorite(Context context) {
+        MoviesDatabase  mDb = MoviesDatabase.getInstance(context) ;
+        Movie   moveFromDb = mDb.moviesDao().getMovieById(ID) ;
+        return (moveFromDb != null) ;
+    }
 
+    public Bitmap getMoviePosterBitmap() {
+        Bitmap posterImage = null ;
+        try {
+            byte[]  data = moviePoster ;
+            posterImage = Bitmap.createBitmap((DisplayMetrics)null, posterWidth, posterHeight, Bitmap.Config.ARGB_8888) ;
+            ByteBuffer buffer = ByteBuffer.wrap(data) ;
+            posterImage.copyPixelsFromBuffer(buffer);
+        } catch (Exception e) {
+            Log.d(TAG, "GetPosterBitmap: " + e.toString());
+        }
+        return posterImage ;
+    }
+    public byte[] getMoviePoster() { return moviePoster; }
+
+    public void setMoviePoster( byte[] moviePoster ) {
+        this.moviePoster = moviePoster ;
+    }
+
+    public int getPosterHeight() { return posterHeight; }
+    public void setPosterHeight(int posterHeight) {
+        this.posterHeight = posterHeight;
+    }
+
+    public int getPosterWidth() { return posterWidth; }
+    public void setPosterWidth(int posterWidth) {
+        this.posterWidth = posterWidth;
+    }
 }
