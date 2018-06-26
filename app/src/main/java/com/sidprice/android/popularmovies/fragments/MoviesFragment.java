@@ -131,7 +131,7 @@ public class MoviesFragment extends Fragment {
     public void onResume() {
         Context context = getContext() ;
 
-        // gridView.setAdapter(null);
+        gridView.setAdapter(null);
         theMovies = new Movies() ;
         /*
             Set the correct menu item icon

@@ -88,7 +88,29 @@ public class Movies {
         List<Movie> theMovies = mDb.moviesDao().loadAllMovies() ;
         String  jsonMovies = getMoviesAsJSON(context, theMovies) ;
         loadMovies(context, jsonMovies);
-//        db.close();
+        /*
+            This method is called to process favorites and the database holds the
+            bitmap images for display. We need to copy those images to the instance
+            variable mMovies
+         */
+        for ( int i = 0 ; i < theMovies.size() ; i++) {
+            /*
+                Iterate over the instance variable movie array and copy
+                images to the matched movie ID
+             */
+            for ( int j = 0 ; j< mMovies.size() ; j++ ) {
+                Movie   srcMovie = theMovies.get(i) ;
+                Movie   dstMovie = mMovies.get(j) ;
+                if ( srcMovie.getID().equals(dstMovie.getID() ) ) {
+                    //
+                    dstMovie.setPosterWidth(srcMovie.getPosterWidth());
+                    dstMovie.setPosterHeight(srcMovie.getPosterHeight());
+                    dstMovie.setMoviePoster(srcMovie.getMoviePoster());
+                    break;      // Current movie processed
+                }
+            }
+        }
+
     }
     /*
         This method receives the configuration json string that
@@ -180,9 +202,9 @@ public class Movies {
                 jsonMovie.put(context.getString(R.string.json_overview), movie.getSynopsis());
                 jsonMovie.put(context.getString(R.string.json_vote_average), movie.getUserRating());
                 jsonMovie.put(context.getString(R.string.json_release_date), movie.getReleaseDate());
-                    /*
-                        Add movie object to results array
-                     */
+                /*
+                    Add movie object to results array
+                 */
                 jsonResults.put(jsonMovie);
             }
             /*

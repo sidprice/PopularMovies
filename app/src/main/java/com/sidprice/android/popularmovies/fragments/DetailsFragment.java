@@ -115,7 +115,7 @@ public class DetailsFragment extends Fragment {
                 //
                 if ( !mmovie.getPosterUrl().equals("")) {
                     Picasso.get().load(mposter_url).into(mImageView) ;
-                } else {// TODO get bitmap from database
+                } else {
                     mImageView.setImageBitmap(mmovie.getMoviePosterBitmap());
                 }
                 /*

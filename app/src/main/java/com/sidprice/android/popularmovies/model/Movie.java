@@ -65,11 +65,16 @@ public class Movie implements Parcelable {
         synopsis = in.readString();
         userRating = in.readString();
         releaseDate = in.readString();
-//        favorite = false;
-//        if ( in.readInt() != 0 ) {
-//            favorite = true  ;
-//        }
-        moviePoster = null ;
+        posterWidth = in.readInt() ;
+        posterHeight = in.readInt() ;
+        /*
+            Get the movie poster bitmap
+         */
+        int arraySize = in.readInt() ;
+        if ( arraySize > 0) {
+            moviePoster = new byte[arraySize] ;
+            in.readByteArray(moviePoster);
+        }
     }
     /*
         This method recieves the json strings read from the online database
@@ -151,6 +156,17 @@ public class Movie implements Parcelable {
         dest.writeString(synopsis);
         dest.writeString(userRating);
         dest.writeString(releaseDate);
+        dest.writeInt(posterWidth);
+        dest.writeInt(posterHeight);
+        if ( moviePoster != null ) {
+       /*
+            Write the bitmap byte[] length
+         */
+            dest.writeInt(moviePoster.length);
+            dest.writeByteArray(moviePoster);
+        } else {
+            dest.writeInt(0);
+        }
     }
 
     //
