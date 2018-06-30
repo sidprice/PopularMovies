@@ -1,5 +1,8 @@
 package com.sidprice.android.popularmovies.fragments;
 
+import android.app.Application;
+import android.arch.lifecycle.Observer;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -9,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,20 +22,64 @@ import android.view.ViewGroup;
 import android.widget.GridView;
 import android.widget.Toast;
 
+import com.sidprice.android.popularmovies.model.MainViewModel;
+import com.sidprice.android.popularmovies.model.Movie;
 import com.sidprice.android.popularmovies.tasks.FetchMovieDataTask;
 import com.sidprice.android.popularmovies.activities.FilterActivity;
 import com.sidprice.android.popularmovies.model.Movies;
 import com.sidprice.android.popularmovies.adapters.MoviesAdapter;
 import com.sidprice.android.popularmovies.R;
 
+import java.security.PublicKey;
+import java.util.List;
+
 public class MoviesFragment extends Fragment {
+    private static final String TAG = "MoviesFragment";
+    /*
+        Preference file access keys
+     */
+    public  static  final   String  preference_file_key = "com.sidprice.android.popularmovies.PREF_FILE_KEY" ;
+    public  static  final   String  saved_filter_key = "savedFilterKey" ;
+    public  static  final   String  saved_filter_default_key = "popular" ;
+    public  static  final   String  saved_intial_startup = "initial_startup" ;
+    public  static  final   String  state_main_scroll_position = "state_main_scroll_position" ;
+    public  static  final   String  state_details_scroll_position = "state_details_scroll_position" ;
+    /*
+        TMDB access keys
+     */
+    public  static  final   String  request_popular = "popular" ;
+    public  static  final   String  request_top_rated = "top_rated" ;
+    public  static  final   String  request_user_favorites = "user_favorites" ;
+
     private Movies theMovies ;
+    private MainViewModel   favoritesViewModel ;
     private MenuItem filterMenuItem ;
     private GridView gridView ;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        /*
+            Assert that shared preference flag that indicates initial startup
+         */
+        saveInitialStartupFlag(true) ;
+        favoritesViewModel = ViewModelProviders.of(this).get(MainViewModel.class) ;
+        favoritesViewModel.getMovies().observe(this, new Observer<List<Movie>>() {
+            @Override
+            public void onChanged(@Nullable List<Movie> movies) {
+                Log.d(TAG, "onChanged: called");
+                /*
+                    If this is the first change after startup AND
+                    the current filter selcetion is NOT favorites ... do nothing
+                 */
+                String currentFilterValue = getFilterValue(getContext()) ;
+                Boolean initialSartupFlag = getIsInitialStartup(getContext()) ;
+                if ( (currentFilterValue.equals(request_user_favorites))) {
+                    theMovies.updateFromDatabase(getContext(), movies);
+                    SetupGridView();
+                }
+            }
+        });
     }
 
     @Nullable
@@ -70,14 +118,26 @@ public class MoviesFragment extends Fragment {
         return super.onOptionsItemSelected(item);
     }
 
-    /*
-            Return the current filter request string ID
-         */
-    private int getFilterValue(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences(getString(R.string.preference_file_key), Context.MODE_PRIVATE) ;
-        return sharedPreferences.getInt(getString(R.string.saved_filter_key), R.string.request_popular);
+    private void saveInitialStartupFlag(Boolean state) {
+        SharedPreferences sharedPreferences = getContext().getSharedPreferences(preference_file_key, Context.MODE_PRIVATE) ;
+        SharedPreferences.Editor editor = sharedPreferences.edit() ;
+        editor.putBoolean(saved_intial_startup, state) ;
+        editor.apply();
     }
 
+
+    /*
+            Return the current filter request string
+     */
+    private String getFilterValue(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(preference_file_key, Context.MODE_PRIVATE) ;
+        return sharedPreferences.getString(saved_filter_key, request_popular);
+    }
+
+    private boolean getIsInitialStartup(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences(preference_file_key, Context.MODE_PRIVATE) ;
+        return sharedPreferences.getBoolean(saved_intial_startup, true);
+    }
     /*
     Set the icon for the options menu according to the current filter selection
  */
@@ -88,21 +148,21 @@ public class MoviesFragment extends Fragment {
          /*
             Get the filter preference
          */
-            int filterRequestID = getFilterValue(context);
+            String filterRequestID = getFilterValue(context);
 
             switch(filterRequestID) {
                 default:
-                case R.string.request_popular: {
+                case request_popular: {
                     theIcon = ContextCompat.getDrawable(context, R.drawable.ic_popular) ;
                     break;
                 }
 
-                case R.string.request_top_rated: {
+                case request_top_rated: {
                     theIcon = ContextCompat.getDrawable(context, R.drawable.ic_top_rated) ;
                     break;
                 }
 
-                case R.string.request_user_favorites: {
+                case request_user_favorites: {
                     theIcon = ContextCompat.getDrawable(context, android.R.drawable.btn_star_big_on) ;
                     break ;
                 }
@@ -114,14 +174,14 @@ public class MoviesFragment extends Fragment {
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
         int gridScrollPosition = gridView.getFirstVisiblePosition() ;
-        outState.putInt(getString(R.string.state_main_scroll_position), gridScrollPosition);
+        outState.putInt(state_main_scroll_position, gridScrollPosition);
         super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
         if ( savedInstanceState != null ) {
-            int gridScrollPosition = savedInstanceState.getInt(getString(R.string.state_main_scroll_position)) ;
+            int gridScrollPosition = savedInstanceState.getInt(state_main_scroll_position) ;
             gridView.setSelection(gridScrollPosition);
         }
         super.onViewStateRestored(savedInstanceState);
@@ -129,10 +189,14 @@ public class MoviesFragment extends Fragment {
 
     @Override
     public void onResume() {
+        Log.d(TAG, "onResume: called");
         Context context = getContext() ;
+        Application application = getActivity().getApplication() ;
+        Boolean     initialStartupFlag = getIsInitialStartup(context) ;
+        saveInitialStartupFlag(false); ;
+        GridView theGridView = getActivity().findViewById(R.id.gv_movies);
+        theGridView.setAdapter(null);
 
-        gridView.setAdapter(null);
-        theMovies = new Movies() ;
         /*
             Set the correct menu item icon
          */
@@ -143,23 +207,27 @@ public class MoviesFragment extends Fragment {
           /*
             Get the filter preference
          */
-        int filterValue = getFilterValue(context);
-        String  fileString = context.getString(filterValue) ;
-        int test = (int)R.string.request_popular ;
+        String filterValue = getFilterValue(context);
         /*
             Check if the filter option is for user favorites of requires
             online access
          */
         switch(filterValue) {
             default:
-            case (int)R.string.request_user_favorites: {
-                theMovies.loadMovies(context);
+            case request_user_favorites: {
+                //theMovies.loadMovies(application);
+                if (!initialStartupFlag) {
+                    List<Movie> myMovies = favoritesViewModel.getMovies().getValue() ;
+                    if (myMovies != null ) {
+                        theMovies.updateFromDatabase(context, favoritesViewModel.getMovies().getValue());
+                    }
+                }
                 SetupGridView() ;
                 break ;
             }
 
-            case (int)R.string.request_top_rated:
-            case (int)R.string.request_popular: {
+            case request_top_rated:
+            case request_popular: {
             /*
                 start the movie data fetcher
             */
@@ -181,11 +249,11 @@ public class MoviesFragment extends Fragment {
                              */
                             SetupGridView() ;
                         } else {
-                                Toast.makeText(getContext(), R.string.error_network_access_failed, Toast.LENGTH_LONG).show(); ;
+                                Toast.makeText(getContext(), R.string.error_network_access_failed, Toast.LENGTH_LONG).show();
                         }
                     }
                 }) ;
-                myTask.execute(getString(filterValue)) ;    // Runb the online access task
+                myTask.execute(filterValue) ;    // Run the online access task
                 break ;
             }
         }
@@ -195,9 +263,12 @@ public class MoviesFragment extends Fragment {
     private void SetupGridView() {
         GridView theGridView = getActivity().findViewById(R.id.gv_movies);
         final MoviesAdapter moviesAdapter = new MoviesAdapter(getContext(), theMovies);
+        theGridView.setAdapter(null);
         theGridView.setAdapter(moviesAdapter);
-        if ( theMovies.getCount() == 0 ) {
-            Toast.makeText(getContext(), R.string.error_no_favorites, Toast.LENGTH_LONG).show(); ;
+        if ( getFilterValue(getContext()).equals(R.string.radio_filter_favorite)) {
+            if ( theMovies.getCount() == 0 ) {
+                Toast.makeText(getContext(), R.string.error_no_favorites, Toast.LENGTH_LONG).show();
+            }
         }
     }
 }

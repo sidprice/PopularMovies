@@ -1,5 +1,6 @@
 package com.sidprice.android.popularmovies.database;
 
+import android.arch.lifecycle.LiveData;
 import android.arch.persistence.room.Dao;
 import android.arch.persistence.room.Delete;
 import android.arch.persistence.room.Insert;
@@ -15,12 +16,12 @@ import java.util.List;
 @Dao
 public interface MoviesDao {
     @Query("SELECT * from movies")
-    List<Movie> loadAllMovies() ;
+    LiveData<List<Movie>> loadAllMovies() ;
 
     @Query("SELECT * FROM movies WHERE ID = :movieID")
     public  Movie getMovieById(String movieID) ;
 
-    @Insert
+    @Insert(onConflict = REPLACE)
     void insertMovie(Movie movie) ;
 
     @Update(onConflict = REPLACE)

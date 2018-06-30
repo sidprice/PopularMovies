@@ -46,6 +46,9 @@ public class Movie implements Parcelable {
     @Ignore
     private ArrayList<String>       trailers = new ArrayList<String>() ;
 
+    @Ignore
+    private boolean isFavorite = false ;
+
     public Movie(String ID, String originalTitle, String posterUrl, String synopsis, String userRating, String releaseDate, byte[] moviePoster) {
         this.ID = ID ;
         this.originalTitle = originalTitle ;
@@ -67,6 +70,11 @@ public class Movie implements Parcelable {
         releaseDate = in.readString();
         posterWidth = in.readInt() ;
         posterHeight = in.readInt() ;
+        if ( in.readInt() == 0 ) {
+            isFavorite = false ;
+        } else {
+            isFavorite = true ;
+        }
         /*
             Get the movie poster bitmap
          */
@@ -158,6 +166,11 @@ public class Movie implements Parcelable {
         dest.writeString(releaseDate);
         dest.writeInt(posterWidth);
         dest.writeInt(posterHeight);
+        if ( isFavorite == true ) {
+            dest.writeInt(1);
+        } else {
+            dest.writeInt(0);
+        }
         if ( moviePoster != null ) {
        /*
             Write the bitmap byte[] length
@@ -192,10 +205,12 @@ public class Movie implements Parcelable {
         return reviews.get(position) ;
     }
     //
-    public Boolean getFavorite(Context context) {
-        MoviesDatabase  mDb = MoviesDatabase.getInstance(context) ;
-        Movie   moveFromDb = mDb.moviesDao().getMovieById(ID) ;
-        return (moveFromDb != null) ;
+    public Boolean getFavorite() {
+        return isFavorite ;
+    }
+
+    public void setFavorite(boolean favorite) {
+        isFavorite = favorite;
     }
 
     public Bitmap getMoviePosterBitmap() {

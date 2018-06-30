@@ -1,5 +1,6 @@
 package com.sidprice.android.popularmovies.adapters;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -64,19 +65,16 @@ public class MoviesAdapter extends BaseAdapter {
                 Get the poster imageview for the item view
              */
             ImageView imageView = convertView.findViewById(R.id.iv_Poster) ;
-            ImageView imageFavorite = convertView.findViewById(R.id.iv_Favorite) ;
-            final ViewHolder viewHolder = new ViewHolder( imageView, imageFavorite, theMovie.getID()) ;
+            //ImageView imageFavorite = convertView.findViewById(R.id.iv_Favorite) ;
+            final ViewHolder viewHolder = new ViewHolder( imageView, theMovie.getID()) ;
             convertView.setTag(viewHolder);
         }
         /*
             If the movie has a poster URL then it is online, use Picasso to load it
          */
         final ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-        if ( theMovie.getPosterUrl().equals("")) {
-            MoviesDatabase mDb = MoviesDatabase.getInstance(context) ;
-            Movie movieInDb = mDb.moviesDao().getMovieById(theMovie.getID()) ;
-            Bitmap  posterImage = movieInDb.getMoviePosterBitmap() ;
-            viewHolder.imageView.setImageBitmap(posterImage);
+        if ( theMovie.getFavorite()) {
+            viewHolder.imageView.setImageBitmap(theMovie.getMoviePosterBitmap());
         } else {
             String moviePosterPath = Movies.tmdPosterBaseUrl() + imageSize + theMovie.getPosterUrl() + "?api_key=" + Movies.tmdApiKey();
             Picasso.get().load(moviePosterPath).into(viewHolder.imageView) ;
@@ -84,11 +82,11 @@ public class MoviesAdapter extends BaseAdapter {
         /*
             Set the favorite star image according to move favorite state
          */
-        if (theMovie.getFavorite(context)) {
-            viewHolder.imageFavorite.setImageResource(android.R.drawable.btn_star_big_on);
-        } else {
-            viewHolder.imageFavorite.setImageResource(android.R.drawable.btn_star_big_off);
-        }
+//        if (theMovie.getFavorite(context)) {
+//            viewHolder.imageFavorite.setImageResource(android.R.drawable.btn_star_big_on);
+//        } else {
+//            viewHolder.imageFavorite.setImageResource(android.R.drawable.btn_star_big_off);
+//        }
         /*
             set an onClick handler for the image
          */
@@ -114,13 +112,12 @@ public class MoviesAdapter extends BaseAdapter {
 
 
     private class ViewHolder {
-        private final ImageView imageView, imageFavorite ;
+        private final ImageView imageView ;
         private String movieID ;
 
-        public ViewHolder( ImageView imageView, ImageView imageFavorite, String movieID) {
+        public ViewHolder( ImageView imageView, String movieID) {
             this.movieID = movieID ;
             this.imageView = imageView ;
-            this.imageFavorite = imageFavorite ;
         }
     }
 }

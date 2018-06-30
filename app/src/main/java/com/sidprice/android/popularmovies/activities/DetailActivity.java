@@ -11,8 +11,8 @@ import com.sidprice.android.popularmovies.R;
 import com.sidprice.android.popularmovies.fragments.DetailsFragment;
 
 public class DetailActivity extends AppCompatActivity {
-    ImageView   mImageView ;
-    TextView    mtv_title, mtv_release_date, mtv_user_rating, mtv_synopsis ;
+    private ImageView   mImageView ;
+    private TextView    mtv_title, mtv_release_date, mtv_user_rating, mtv_synopsis ;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

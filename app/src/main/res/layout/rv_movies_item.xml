@@ -13,14 +13,4 @@
         android:adjustViewBounds="true"
         android:id="@+id/iv_Poster"/>
 
-    <ImageView
-        android:id="@+id/iv_Favorite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintLeft_toLeftOf="@id/iv_Poster"
-        app:layout_constraintTop_toTopOf="@id/iv_Poster"
-        app:srcCompat="@android:drawable/btn_star_big_off" />
-
 </android.support.constraint.ConstraintLayout>

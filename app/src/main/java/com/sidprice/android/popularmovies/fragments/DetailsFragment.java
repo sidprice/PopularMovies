@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.sidprice.android.popularmovies.activities.CustomLinearLayout;
+import com.sidprice.android.popularmovies.activities.MainActivity;
 import com.sidprice.android.popularmovies.adapters.ReviewsAdapter;
 import com.sidprice.android.popularmovies.database.MoviesDatabase;
 import com.sidprice.android.popularmovies.tasks.FetchMovieExtraDataTask;
@@ -28,6 +29,8 @@ import com.sidprice.android.popularmovies.adapters.TrailerListAdapter;
 import com.squareup.picasso.Picasso;
 
 import java.nio.ByteBuffer;
+
+import static com.sidprice.android.popularmovies.fragments.MoviesFragment.state_details_scroll_position;
 
 public class DetailsFragment extends Fragment {
     private static final String TAG = "DetailsFragment";
@@ -121,7 +124,7 @@ public class DetailsFragment extends Fragment {
                 /*
                     Set favorite image and button text according to movie favorite state
                  */
-                processMovieFavorite( mmovie.getFavorite(getContext()));
+                processMovieFavorite( mmovie.getFavorite());
                 mtv_release_date.setText(mrelease_date);
                 mtv_user_rating.setText(muser_rating);
                 mtv_synopsis.setText(msynopsis);
@@ -139,12 +142,12 @@ public class DetailsFragment extends Fragment {
                     @Override
                     public void onClick(View v) {
                         Bitmap  posterBitmap ;
-                        boolean isFavorite = !(mmovie.getFavorite(getContext())) ;
+                        boolean isFavorite = !(mmovie.getFavorite()) ;
                         processMovieFavorite(isFavorite);
                         /*
                             Update the local database of favorite movies
                          */
-                        MoviesDatabase moviesDb = MoviesDatabase.getInstance(getContext()) ;
+                        final MoviesDatabase moviesDb = MoviesDatabase.getInstance(getContext()) ;
                         /*
                             If movie is favorite, add to database
                          */
@@ -165,13 +168,25 @@ public class DetailsFragment extends Fragment {
                             mmovie.setMoviePoster(data);
                             mmovie.setPosterHeight(posterBitmap.getHeight() ) ;
                             mmovie.setPosterWidth(posterBitmap.getWidth()) ;
-                            moviesDb.moviesDao().insertMovie(mmovie);
+                            Thread thread = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    moviesDb.moviesDao().insertMovie(mmovie);
+                                }
+                            }) ;
+                            thread.start();
                             Toast.makeText(getContext(), "Added favorite movie", Toast.LENGTH_SHORT).show() ;
                         } else {
                             /*
                                 Remove from local database
                              */
-                            moviesDb.moviesDao().deleteMovie(mmovie);
+                            Thread thread = new Thread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    moviesDb.moviesDao().deleteMovie(mmovie);
+                                }
+                            }) ;
+                            thread.start();
                             Toast.makeText(getContext(), "Deleted favorite movie", Toast.LENGTH_SHORT).show() ;
                         }
 
@@ -190,14 +205,14 @@ public class DetailsFragment extends Fragment {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         mscrollview_position[0] = mscroll_view.getScrollX() ;
         mscrollview_position[1] = mscroll_view.getScrollY() ;
-        outState.putIntArray( getString(R.string.state_details_scroll_position), mscrollview_position);
+        outState.putIntArray( state_details_scroll_position, mscrollview_position);
         super.onSaveInstanceState(outState);
     }
 
     @Override
     public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
         if (savedInstanceState != null) {
-            mscrollview_position = savedInstanceState.getIntArray( getString(R.string.state_details_scroll_position)) ;
+            mscrollview_position = savedInstanceState.getIntArray( state_details_scroll_position) ;
         }
         super.onViewStateRestored(savedInstanceState);
     }

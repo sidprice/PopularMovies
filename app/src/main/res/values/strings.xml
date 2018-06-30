@@ -4,14 +4,6 @@
     <string name="error_network_access_failed">Unable to access online database</string>
     <string name="error_no_favorites">You have not selected any favorite movies</string>
 
-    <string name="preference_file_key">com.sidprice.android.popularmovies.PREF_FILE_KEY</string>
-    <string name="saved_filter_key">savedFilterKey</string>
-    <string name="saved_filter_default_key">popular</string>
-
-    <string name="request_popular">popular</string>
-    <string name="request_top_rated">top_rated</string>
-    <string name="request_user_favorites">user_favorites</string>
-
     <string name="radio_filter_popular">Popular</string>
     <string name="radio_filter_top_rated">Top Rated</string>
     <string name="radio_filter_favorite">User Favorites</string>
@@ -28,15 +20,5 @@
     <string name="intent_movie_id">id</string>
     <string name="btn_remove_favorite">Remove Favorite</string>
     <string name="btn_add_favorite">Add Favorite</string>
-    <string name="json_original_title">original_title</string>
-    <string name="json_poster_path">poster_path</string>
-    <string name="json_overview">overview</string>
-    <string name="json_vote_average">vote_average</string>
-    <string name="json_release_date">release_date</string>
-    <string name="json_page">page</string>
-    <string name="json_total_results">total_results</string>
-    <string name="json_id">id</string>
 
-    <string name="state_main_scroll_position">state_main_scroll_position</string>
-    <string name="state_details_scroll_position">state_details_scroll_position</string>
 </resources>
